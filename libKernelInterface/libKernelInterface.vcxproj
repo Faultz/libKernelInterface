@@ -57,14 +57,7 @@
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Debug|ORBIS'">--required-files $(SolutionDir)$(ProjectName)\$(IntermediateOutputPath)\ASM.o %(AdditionalOptions)</AdditionalOptions>
     </Link>
     <PostBuildEvent>
-      <Command>py -V:3.11 $(SolutionDir)Scripts\make_fself-3.py  $(OutputPath)$(TargetName).prx  $(OutputPath)$(TargetName).sprx
-
-echo open 1.1.0.14 2121&gt; temp.txt
-echo cd "/system/vsh/app/ORBS30000/"&gt;&gt; temp.txt
-echo send $(OutputPath)$(TargetName).sprx&gt;&gt; temp.txt
-echo quit&gt;&gt; temp.txt
-ftp -A -s:temp.txt
-del temp.txt</Command>
+      <Command>python $(SolutionDir)Scripts\make_fself-3.py  $(OutputPath)$(TargetName).prx  $(OutputPath)$(TargetName).sprx</Command>
     </PostBuildEvent>
     <ClCompile>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|ORBIS'">_DEBUG;LIBRARY_IMPL;%(PreprocessorDefinitions)</PreprocessorDefinitions>

@@ -85,7 +85,6 @@ namespace Kernel
 
 		if (res != 0)
 		{
-			printf("ReadWriteProcessMemory(): proc_rwmem failed with the error %llX\n", res);
 			return false;
 		}
 

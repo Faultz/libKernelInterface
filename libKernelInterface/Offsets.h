@@ -23,6 +23,10 @@ struct Offsets
 	uint64_t proc_rwmem;
 	uint64_t sysvec;
 
+	uint64_t vm_map_lock_read;
+	uint64_t vm_map_unlock_read;
+	uint64_t vm_map_lookup;
+
 	Offsets(int firmware)
 	{
 		switch (firmware)
@@ -145,6 +149,11 @@ struct Offsets
 			allproc = 0x01B946E0;
 			proc_rwmem = 0x0041EB00;
 			sysvec = 0x01528E30;
+
+			/* Ext */
+			vm_map_lock_read = 0x0007BA30;
+			vm_map_lookup = 0x0007C1C0;
+			vm_map_unlock_read = 0x0007BAA0;
 			break;
 		}
 	}

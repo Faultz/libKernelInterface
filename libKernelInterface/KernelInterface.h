@@ -17,5 +17,16 @@ struct OrbisLibraryInfo
 	size_t DataSize;
 };
 
+struct OrbisProcessPage
+{
+	char Name[256];
+	uint64_t Start;
+	uint64_t End;
+	uint64_t Offset;
+	size_t Size;
+	uint32_t Prot;
+};
+
 PRX_INTERFACE bool ReadWriteMemory(int pid, void* addr, void* data, size_t len, bool write);
-PRX_INTERFACE int GetLibraries(int pid, OrbisLibraryInfo* libraries, int maxCount);
+PRX_INTERFACE int GetLibraries(int pid, OrbisLibraryInfo* libraries, int maxCount); 
+PRX_INTERFACE int GetPages(int pid, OrbisProcessPage* pages, int maxCount);

@@ -15,6 +15,22 @@ struct sysReadWriteMemoryArgs
 	size_t len;
 };
 
+struct sysGetLibrariesArgs
+{
+	void* Syscall;
+	int pid;
+	OrbisLibraryInfo* libOut;
+	int* libCount;
+};
+
+struct sysGetPagesArgs
+{
+	void* Syscall;
+	int pid;
+	OrbisProcessPage* pagesOut;
+	int* pageCount;
+};
+
 int SysWriteMemory(Kernel::Thread* td, sysReadWriteMemoryArgs* args)
 {
 	auto proc = Kernel::GetProcByPid(args->pid);
@@ -42,14 +58,6 @@ bool ReadWriteMemory(int pid, void* addr, void* data, size_t len, bool write)
 	syscall(11, write ? SysWriteMemory : SysReadMemory, pid, addr, data, len);
 	return true;
 }
-
-struct sysGetLibrariesArgs
-{
-	void* Syscall;
-	int pid;
-	OrbisLibraryInfo* libOut;
-	int* libCount;
-};
 
 int sysGetLibraries(Kernel::Thread* td, sysGetLibrariesArgs* args)
 {
@@ -102,6 +110,59 @@ int sysGetLibraries(Kernel::Thread* td, sysGetLibrariesArgs* args)
 	return 0;
 }
 
+int sysGetPages(Kernel::Thread* td, sysGetPagesArgs* args)
+{
+
+	Kernel::vm_map_entry* entry = nullptr;
+
+	auto proc = Kernel::GetProcByPid(args->pid);
+	auto entries = args->pagesOut;
+	auto num = args->pageCount;
+
+	Kernel::vmspace* vm = proc->p_vmspace;
+	Kernel::vm_map* map = &vm->vm_map;
+
+	int entriesCount = map->nentries;
+
+	if (!entries)
+	{
+		Kernel::ReadWriteProcessMemory(td, td->td_proc, (void*)args->pageCount, (void*)&entriesCount, sizeof(int), true);
+		return true;
+	}
+
+	((int(*)(...))(GetKernelBase() + OffsetTable->vm_map_lock_read))(map);
+	((int(*)(...))(GetKernelBase() + OffsetTable->vm_map_lookup))(map, nullptr, &entry);
+	((int(*)(...))(GetKernelBase() + OffsetTable->vm_map_unlock_read))(map);
+
+	OrbisProcessPage* info = (OrbisProcessPage*)Kernel::malloc(entriesCount * sizeof(OrbisProcessPage));
+	if (!info)
+	{
+		Kernel::free(info);
+		info = nullptr;
+		return -1;
+	}
+
+	for (int i = 0; i < entriesCount; i++) {
+		info[i].Start = entry->start;
+		info[i].End = entry->end;
+		info[i].Offset = entry->offset;
+		info[i].Size = entry->end - entry->start;
+		info[i].Prot = entry->prot & (entry->prot >> 8);
+		Kernel::memcpy(info[i].Name, entry->name, sizeof(info[i].Name));
+
+		if (!(entry = entry->next)) {
+			break;
+		}
+	}
+
+	Kernel::ReadWriteProcessMemory(td, td->td_proc, (void*)args->pagesOut, (void*)info, sizeof(OrbisProcessPage) * entriesCount, true);
+	Kernel::ReadWriteProcessMemory(td, td->td_proc, (void*)args->pageCount, (void*)&entriesCount, sizeof(int), true);
+
+	Kernel::free(info);
+
+	return false;
+}
+
 int GetLibraries(int pid, OrbisLibraryInfo* libraries, int maxCount)
 {
 	OrbisLibraryInfo librariesTemp[256];
@@ -112,6 +173,18 @@ int GetLibraries(int pid, OrbisLibraryInfo* libraries, int maxCount)
 		memcpy(libraries, librariesTemp, sizeof(OrbisLibraryInfo) * maxCount);
 
 	return libCount;
+}
+
+int GetPages(int pid, OrbisProcessPage* pages, int maxCount)
+{
+	OrbisProcessPage pagesTemp[500];
+	int pagesCount = 0;
+	syscall(11, sysGetPages, pid, pages ? &pagesTemp : nullptr, &pagesCount);
+
+	if (pagesCount > 0)
+		memcpy(pages, pagesTemp, sizeof(OrbisProcessPage) * maxCount);
+
+	return pagesCount;
 }
 
 struct sysMmapArgs

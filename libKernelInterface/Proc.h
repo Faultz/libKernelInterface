@@ -22,7 +22,46 @@ namespace Kernel
 	{
 		char _0x00[0x20];
 	}; // 0x20
-	
+
+	struct lock_object {
+		const char* lo_name;
+		uint32_t lo_flags;
+		uint32_t lo_data;
+		void* lo_witness;
+	};
+
+	struct mtx {
+		struct lock_object lock_object;
+		volatile void* mtx_lock;
+	};
+
+	struct vm_map_entry;
+	typedef uint64_t vm_offset_t;
+
+	TYPE_BEGIN(struct vm_map_entry, 0xC0);
+	TYPE_FIELD(struct vm_map_entry* prev, 0);
+	TYPE_FIELD(struct vm_map_entry* next, 8);
+	TYPE_FIELD(struct vm_map_entry* left, 0x10);
+	TYPE_FIELD(struct vm_map_entry* right, 0x18);
+	TYPE_FIELD(uint64_t start, 0x20);
+	TYPE_FIELD(uint64_t end, 0x28);
+	TYPE_FIELD(uint64_t offset, 0x50);
+	TYPE_FIELD(uint16_t prot, 0x5C);
+	TYPE_FIELD(char name[32], 0x8D);
+	TYPE_END();
+
+	TYPE_BEGIN(struct vm_map, 0x178);
+	TYPE_FIELD(vm_map_entry header, 0);
+	TYPE_FIELD(struct sx lock, 0xB8);
+	TYPE_FIELD(struct mtx system_mtx, 0xD8);
+	TYPE_FIELD(int nentries, 0x100);
+	TYPE_END();
+
+	TYPE_BEGIN(struct vmspace, 0x250);
+	TYPE_FIELD(struct vm_map vm_map, 0);
+	// maybe I will add more later just for documentation purposes
+	TYPE_END();
+
 	struct dynlib_obj
 	{
 		dynlib_obj* next;				// 0x00
@@ -59,7 +98,9 @@ namespace Kernel
 		int Flag;						// 0xA8
 		int State;						// 0xAC
 		int pid;						// 0xB0
-		char _0xB4[0x28C];
+		char _0xB4[0xB4];
+		vmspace* p_vmspace;				// 0x168
+		char _0x170[0x1D0];
 		dynlib* DynLib;					// 0x340
 		char _0x348[0x48];
 		char TitleId[0x10];				// 0x390
